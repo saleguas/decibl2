@@ -1,0 +1,24 @@
+
+version: 2.1
+orbs:
+  python: circleci/python@1.5.0
+
+
+jobs:
+  build-and-test:
+    docker:
+      - image: cimg/python:3.10.8
+    working_directory: ~/src/tests/
+    steps:
+      - checkout
+      - python/install-packages:
+          pkg-manager: pip
+      - run:
+          name: Run tests
+          command: pytest -s
+
+workflows:
+  build-master: # This is the name of the workflow, feel free to change it to better match your workflow.
+    # Inside the workflow, you define the jobs you want to run.
+    jobs:
+      - build-and-test

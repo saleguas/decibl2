@@ -1,0 +1,11 @@
+fastapi
+audio_metadata
+pytest
+mkdocs-glightbox
+mkdocs
+mkdocs-material
+progress
+uvicorn
+deepdiff
+mkdocstrings-python
+mkdocstrings
