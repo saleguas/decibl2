@@ -25,19 +25,14 @@ logging.info("Loading database module")
 class AnalyticsDBHandler:
     """Class to handle all the data analytics, especially stuff like creating tables, making backups, etc."""
 
-    # CONSTRUCTOR
-
-    def __init__(self, debug_path=None) -> None:
-        """
-        __init__ Initialize the database handler. Creates the database at the path specified in config.py
-
-        Args:
-            debug_path (str, optional): Path to the database for debug. Defaults to None.
-        """
-        if debug_path is None:
-            self.conn = sqlite3.connect(config.DATABASE_PATH)
+    def __init__(self, conn=None, debug_path=None):
+        if conn is None:
+            if debug_path is None:
+                self.conn = sqlite3.connect(config.DATABASE_PATH, check_same_thread=False)
+            else:
+                self.conn = sqlite3.connect(debug_path, check_same_thread=False)
         else:
-            self.conn = sqlite3.connect(debug_path)
+            self.conn = conn
 
     # ------------------------------------------------------------------------------------------------------------
     # --------------------------------------------------------------------------------------------
@@ -1435,6 +1430,7 @@ class AnalyticsDBHandler:
         # plays table has auto incrementing id, so we don't need to insert the id
         logging.info("Inserting play into plays table")
         cursor = self.conn.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
         cursor.execute(
             "INSERT INTO plays (song_title, song_primary_artist, filesize, start_dt, end_dt, song_id) VALUES (?, ?, ?, ?, ?, ?);",
             (song_title, song_primary_artist, filesize, start_dt, end_dt, song_id)
@@ -1466,6 +1462,7 @@ class AnalyticsDBHandler:
 
         logging.info("Inserting playlist {} into playlists table".format(playlist_name))
         cursor = self.conn.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
         cursor.execute(
             "INSERT INTO playlists (playlist_name, playlist_desc, created_dt) VALUES (?, ?, ?);", (playlist_name, playlist_desc, created_dt))
         self.conn.commit()
@@ -1494,6 +1491,7 @@ class AnalyticsDBHandler:
         added_dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         cursor = self.conn.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
         # duplicates are ok
 
         cursor.execute(
@@ -1520,6 +1518,7 @@ class AnalyticsDBHandler:
         logging.info(
             "Inserting song {} into songs table".format(kwargs["title"]))
         cursor = self.conn.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
         # self.song_table_data = {
         #     "song_id": "N/A", # string
         #     "filepath": "N/A", # string
@@ -1643,6 +1642,7 @@ class AnalyticsDBHandler:
         logging.info("Attempting to insert album artist {} iwith song_id {} into album_artists table".format(
             artist_name, song_id))
         cursor = self.conn.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
         # check if album_artist already exists
         cursor.execute(
             """SELECT 1 FROM album_artists WHERE artist_name = ? AND song_id = ?;""",
@@ -1681,6 +1681,7 @@ class AnalyticsDBHandler:
         logging.info("Attempting to insert song artist {} with song_id {} into song_artists table".format(
             artist_name, song_id))
         cursor = self.conn.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
         # cursor.execute(
         #     """INSERT INTO song_artists (artist_name, song_id, dt_added)
         #     SELECT ?, ?, ? WHERE NOT EXISTS (
@@ -1726,6 +1727,7 @@ class AnalyticsDBHandler:
         logging.info("Attempting to insert composer {} with song_id {} into composers table".format(
             composer_name, song_id))
         cursor = self.conn.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
         cursor.execute(
             """SELECT 1 FROM composers WHERE composer_name = ? AND song_id = ?;""",
             (composer_name, song_id)
@@ -1752,6 +1754,7 @@ class AnalyticsDBHandler:
         logging.warning("Inserting genre {} with song_id {} into genres table".format(
             genre_name, song_id))
         cursor = self.conn.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
         cursor.execute(
             """SELECT 1 FROM genres WHERE genre_name = ? AND song_id = ?;""",
             (genre_name, song_id)

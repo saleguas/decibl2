@@ -441,7 +441,6 @@ def test_populate_db():
 def test_get_all_songs():
     setup_prezipped_db()
     songs = dbHelper.get_all_songs()
-    print(songs)
     assert len(songs) == 18
 
 def test_get_song_artists_of_song():
