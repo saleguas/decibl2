@@ -26,6 +26,7 @@ dbHelper = analyticsdb.AnalyticsDBHandler(debug_path=config.DATABASE_TEST_PATH)
 
 
 def setup_prezipped_db():
+
     with zipfile.ZipFile(config.ZIPPED_DATABASE_TEST_PATH1, "r") as zip_ref:
         zip_ref.extractall(os.path.dirname(config.DATABASE_TEST_PATH))
 
