@@ -4,13 +4,17 @@ import sys
 import sqlite3
 from typing import Dict, List
 import zipfile
+from songparser import SongMetadata
+
 # add current file to system path
+import concurrent.futures
 
 import logging
 import config
 import songparser
 from fastapi import HTTPException
 from progress.bar import Bar
+from tqdm import tqdm
 
 
 # log a message
@@ -1778,66 +1782,71 @@ class AnalyticsDBHandler:
 
     # IMPORTANT: FUNCTION BELOW!
 
-    def populate_database(self, soundfiles_path=config.SOUNDFILES_PATH):
-        """
-        populate_database Populate the database using the data from the soundfiles in the SOUNDFILES_PATH directory
-        """
+def fetch_files(soundfiles_path):
+    # Fetch all the files from the given path.
+    soundfiles = []
+    for root, dirs, files in os.walk(soundfiles_path):
+        for file in files:
+            soundfiles.append(os.path.abspath(os.path.join(root, file)))
+    return soundfiles
 
-        # fetch all the files from config.SOUNDFILES_PATH
-        soundfiles = []
+def process_file(file_path, conn):
+    db_handler = AnalyticsDBHandler(conn=conn)
+    # Parse and process each individual file.
+    try:
+        parser = SongMetadata(filepath=file_path)
+    except Exception as e:
+        logging.error(f"Could not parse file: {file_path} with error: {e}")
+        return
 
-        # there could be nested directories, so we need to recursively go through all the directories
-        for root, dirs, files in os.walk(soundfiles_path):
-            for file in files:
-                soundfiles.append(os.path.abspath(os.path.join(root, file)))
+    # Process the data from the file.
+    song_data = parser.get_song_table_data()
+    song_id = "N/A"
 
-        
-        bar = Bar("Processing soundfiles", max=len(soundfiles))
+    if song_data is not None:
+        db_handler.insert_song(**song_data)
+        song_id = song_data["song_id"]
+    else:
+        logging.error(f"Could not get song data for file: {file_path}")
+        return
 
-        for file_path in soundfiles:
-            # get path of file
+    album_artist_data = parser.get_album_artist_data()
+    if album_artist_data is not None:
+        for artist in album_artist_data:
+            insert_album_artist(artist, song_id)
 
-            # get metadata from file
-            parser = None
-            try:
-                parser = songparser.SongMetadata(filepath=file_path)
-            except Exception as e:
-                logging.error(f"Could not parse file: {file_path} with error: {e}")
-                continue
+    song_artist_data = parser.get_song_artist_data()
+    if song_artist_data is not None:
+        for artist in song_artist_data:
+            insert_song_artist(artist, song_id)
 
-            # get the song data and insert it into the database
-            song_data = parser.get_song_table_data()
-            song_id = "N/A"
+    composer_data = parser.get_composer_data()
+    if composer_data is not None:
+        for composer in composer_data:
+            insert_composer(composer, song_id)
 
-            if song_data is not None:
-                self.insert_song(**song_data)
-                song_id = song_data["song_id"]
-            else:
-                logging.error(f"Could not get song data for file: {file_path}")
-                continue
+    genre_data = parser.get_genre_data()
+    if genre_data is not None:
+        for genre in genre_data:
+            insert_genre(genre, song_id)
 
-            # get the artist data and insert it into the database
-            album_artist_data = parser.get_album_artist_data()
-            if album_artist_data is not None:
-                for artist in album_artist_data:
-                    self.insert_album_artist(artist, song_id)
 
-            song_artist_data = parser.get_song_artist_data()
-            if song_artist_data is not None:
-                for artist in song_artist_data:
-                    self.insert_song_artist(artist, song_id)
+def populate_database(soundfiles_path=config.SOUNDFILES_PATH):
+    conn = sqlite3.connect(config.DATABASE_PATH, check_same_thread=False)
 
-            composer_data = parser.get_composer_data()
-            if composer_data is not None:
-                for composer in composer_data:
-                    self.insert_composer(composer, song_id)
+    # Fetch the files.
+    soundfiles = fetch_files(soundfiles_path)
 
-            genre_data = parser.get_genre_data()
-            if genre_data is not None:
-                for genre in genre_data:
-                    self.insert_genre(genre, song_id)
+    # Process the files using multithreading.
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = {executor.submit(process_file, soundfile, conn) for soundfile in soundfiles}
+        pbar = tqdm(total=len(soundfiles), desc="Processing Files")
+        for future in concurrent.futures.as_completed(futures):
+            pbar.update(1)
+        pbar.close()
+    conn.close()
 
-            bar.next()
+
     # ------------------------------------------------------------------------------------------------------------
     # ------------------------------------------------------------------------------------------------------------
     #                                  Backup and Restore

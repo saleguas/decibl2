@@ -384,7 +384,7 @@ def test_populate_db():
     dbHelper.clear_all_tables()
     dbHelper.create_all_tables()
     testsongs_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "testsongs"))
-    dbHelper.populate_database(soundfiles_path=testsongs_path)
+    analyticsdb.populate_database(soundfiles_path=testsongs_path)
 
     
     # check the following tables:
