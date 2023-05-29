@@ -99,6 +99,50 @@ def test_vital_paths():
 # --------------------------------------------------------------------------------
 
 
+def test_get_all_songs():
+    setup_prezipped_db()
+    songs = dbHelper.get_all_songs()
+    assert len(songs) == 18
+    
+
+def test_get_songs_in_playlist():
+    playlists = dbHelper.get_all_playlist_names()
+    playlist1 = playlists[0]
+    playlist2 = playlists[1]
+
+    songs1 = dbHelper.get_songs_in_playlist(playlist1)
+    songs2 = dbHelper.get_songs_in_playlist(playlist2)
+
+    assert songs1[0]["song_id"] == "23fb2258052511a4d07bc555a1b45a41fbd8da0f3ec4a887c9c7282351672956"
+    assert songs1[1]["song_id"] == "b87519d8ede9ab4e642bbe41815cbaf2ddb5245e5b23052a966808ef908e50b0"
+    assert songs1[2]["song_id"] == "4c1e39f575afeb262287c300338256d3b4e67d7bd5e4d431bb3aa67f7be84daa"
+
+    assert songs2[0]["song_id"] == "23fb2258052511a4d07bc555a1b45a41fbd8da0f3ec4a887c9c7282351672956"
+    assert songs2[1]["song_id"] == "b87519d8ede9ab4e642bbe41815cbaf2ddb5245e5b23052a966808ef908e50b0"
+    assert songs2[2]["song_id"] == "89661c6cc19c7f25ecb91d937d175394170672277527282ea7cec71e412c84ef"
+
+
+def test_get_songs_in_genre():
+    genres = dbHelper.get_all_genres()
+
+    check_dict = {
+        "Rock": 9,
+        "Electro": 2,
+        "Techno/House": 1,
+        "Dance": 1,
+        "Pop": 2,
+        "International Pop": 1,
+        "Alternative; Indie Pop; Indie Rock": 1,
+        "Alternative": 2,
+        "Rap/Hip Hop": 1,
+        "Anime": 1,
+        "R&B": 1
+    }
+    for idx, genre in enumerate(genres):
+        songs_in_genre = dbHelper.get_songs_in_genre(genre)
+        assert len(songs_in_genre) == check_dict[genre]
+
+
 def test_create_songs_table():
     try:
         dbHelper.clear_all_tables()
@@ -439,10 +483,7 @@ def test_populate_db():
 #                          COMPLICATED TESTING - RETRIEVALS
 # --------------------------------------------------------------------------------
 
-def test_get_all_songs():
-    setup_prezipped_db()
-    songs = dbHelper.get_all_songs()
-    assert len(songs) == 18
+
 
 def test_get_song_artists_of_song():
     songs = dbHelper.get_all_songs()
@@ -553,21 +594,7 @@ def test_get_genres_of_song():
         genres = dbHelper.get_genres_of_song(song["song_id"])
         assert genres == check_dict[idx]
 
-def test_get_songs_in_playlist():
-    playlists = dbHelper.get_all_playlist_names()
-    playlist1 = playlists[0]
-    playlist2 = playlists[1]
 
-    songs1 = dbHelper.get_songs_in_playlist(playlist1)
-    songs2 = dbHelper.get_songs_in_playlist(playlist2)
-
-    assert songs1[0]["song_id"] == "23fb2258052511a4d07bc555a1b45a41fbd8da0f3ec4a887c9c7282351672956"
-    assert songs1[1]["song_id"] == "b87519d8ede9ab4e642bbe41815cbaf2ddb5245e5b23052a966808ef908e50b0"
-    assert songs1[2]["song_id"] == "4c1e39f575afeb262287c300338256d3b4e67d7bd5e4d431bb3aa67f7be84daa"
-
-    assert songs2[0]["song_id"] == "23fb2258052511a4d07bc555a1b45a41fbd8da0f3ec4a887c9c7282351672956"
-    assert songs2[1]["song_id"] == "b87519d8ede9ab4e642bbe41815cbaf2ddb5245e5b23052a966808ef908e50b0"
-    assert songs2[2]["song_id"] == "89661c6cc19c7f25ecb91d937d175394170672277527282ea7cec71e412c84ef"
 
 def test_get_songs_in_album():
     albums = dbHelper.get_all_albums()
@@ -691,25 +718,6 @@ def test_get_songs_in_composer():
         songs_in_composer = dbHelper.get_songs_in_composer(composer)
         assert len(songs_in_composer) == check_dict[composer]
 
-def test_get_songs_in_genre():
-    genres = dbHelper.get_all_genres()
-
-    check_dict = {
-        "Rock": 9,
-        "Electro": 2,
-        "Techno/House": 1,
-        "Dance": 1,
-        "Pop": 2,
-        "International Pop": 1,
-        "Alternative; Indie Pop; Indie Rock": 1,
-        "Alternative": 2,
-        "Rap/Hip Hop": 1,
-        "Anime": 1,
-        "R&B": 1
-    }
-    for idx, genre in enumerate(genres):
-        songs_in_genre = dbHelper.get_songs_in_genre(genre)
-        assert len(songs_in_genre) == check_dict[genre]
 
 
 if __name__ == "__main__":
